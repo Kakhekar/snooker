@@ -464,8 +464,7 @@
         text-align: center;
         font-weight: 700;
       }
-      .foul-vals,
-      .foul-recipients {
+      .foul-vals {
         display: flex;
         gap: 6px;
         flex-wrap: wrap;
@@ -483,16 +482,6 @@
       }
       .fval-btn:active {
         background: rgba(241, 234, 217, 0.25);
-      }
-      .recip-btn {
-        flex: 1 1 auto;
-        padding: 9px 10px;
-        border-radius: 8px;
-        background: rgba(241, 234, 217, 0.1);
-        color: var(--ivory);
-        font-weight: 700;
-        font-size: 0.78rem;
-        border: 1px solid rgba(241, 234, 217, 0.2);
       }
 
       .hint {
@@ -587,18 +576,12 @@
           </div>
 
           <div id="foulPanel" class="foul-panel" style="display: none">
-            <div id="foulValueStage">
-              <div class="ftitle">Foul — how many points?</div>
-              <div class="foul-vals">
-                <button class="fval-btn" data-foul="4">4</button>
-                <button class="fval-btn" data-foul="5">5</button>
-                <button class="fval-btn" data-foul="6">6</button>
-                <button class="fval-btn" data-foul="7">7</button>
-              </div>
-            </div>
-            <div id="foulRecipientStage" style="display: none">
-              <div class="ftitle">Award points to</div>
-              <div class="foul-recipients" id="foulRecipients"></div>
+            <div class="ftitle">Foul — how many points to deduct?</div>
+            <div class="foul-vals">
+              <button class="fval-btn" data-foul="4">4</button>
+              <button class="fval-btn" data-foul="5">5</button>
+              <button class="fval-btn" data-foul="6">6</button>
+              <button class="fval-btn" data-foul="7">7</button>
             </div>
           </div>
 
@@ -660,7 +643,6 @@
         let state = null;
         let history = [];
         let mode = "individual";
-        let pendingFoulValue = null;
 
         const setupScreen = document.getElementById("setupScreen");
         const matchScreen = document.getElementById("matchScreen");
@@ -836,10 +818,11 @@
           render();
         }
 
-        function awardFoul(recipientIdx, val) {
+        function applyFoul(val) {
           snapshot();
-          state.competitors[state.turn].curBreak = 0;
-          state.competitors[recipientIdx].score += val;
+          const c = state.competitors[state.turn];
+          c.score -= val;
+          c.curBreak = 0;
           state.turn = nextIndex(state.turn);
           closeFoulPanel();
           render();
@@ -880,10 +863,7 @@
         }
 
         function closeFoulPanel() {
-          pendingFoulValue = null;
           document.getElementById("foulPanel").style.display = "none";
-          document.getElementById("foulValueStage").style.display = "block";
-          document.getElementById("foulRecipientStage").style.display = "none";
         }
 
         // ---------- RENDER ----------
@@ -955,38 +935,13 @@
 
         const foulPanel = document.getElementById("foulPanel");
         document.getElementById("foulBtn").addEventListener("click", () => {
-          if (foulPanel.style.display === "none") {
-            foulPanel.style.display = "block";
-            document.getElementById("foulValueStage").style.display = "block";
-            document.getElementById("foulRecipientStage").style.display =
-              "none";
-          } else {
-            closeFoulPanel();
-          }
+          foulPanel.style.display =
+            foulPanel.style.display === "none" ? "block" : "none";
         });
         document.querySelectorAll(".fval-btn").forEach((btn) => {
           btn.addEventListener("click", () => {
             const val = parseInt(btn.dataset.foul, 10);
-            const others = state.competitors.filter((c, i) => i !== state.turn);
-            if (state.competitors.length === 2) {
-              const recipientIdx = nextIndex(state.turn);
-              awardFoul(recipientIdx, val);
-              return;
-            }
-            pendingFoulValue = val;
-            document.getElementById("foulValueStage").style.display = "none";
-            const stage = document.getElementById("foulRecipientStage");
-            stage.style.display = "block";
-            const recipDiv = document.getElementById("foulRecipients");
-            recipDiv.innerHTML = "";
-            state.competitors.forEach((c, i) => {
-              if (i === state.turn) return;
-              const b = document.createElement("button");
-              b.className = "recip-btn";
-              b.textContent = c.name;
-              b.addEventListener("click", () => awardFoul(i, pendingFoulValue));
-              recipDiv.appendChild(b);
-            });
+            applyFoul(val);
           });
         });
       })();

@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1"
+    />
+    <title>Snooker Scoreboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --baize-1: #0d4d38;
+        --baize-2: #0a3d2c;
+        --cushion: #5c2e18;
+        --cushion-light: #7a3f22;
+        --brass: #c9a24b;
+        --ivory: #f1ead9;
+        --red: #b1272a;
+        --yellow: #e8b923;
+        --green-ball: #1f7a3d;
+        --brown: #6e4321;
+        --blue: #1a5fa8;
+        --pink: #e07fa0;
+        --black: #161616;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        min-height: 100vh;
+        background:
+          radial-gradient(
+            ellipse at 50% -10%,
+            rgba(255, 255, 255, 0.05),
+            transparent 60%
+          ),
+          repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.015) 0px,
+            rgba(255, 255, 255, 0.015) 1px,
+            transparent 1px,
+            transparent 3px
+          ),
+          linear-gradient(180deg, var(--baize-1), var(--baize-2));
+        font-family: "Inter", sans-serif;
+        color: var(--ivory);
+        padding: 14px;
+        display: flex;
+        justify-content: center;
+      }
+      .table-frame {
+        width: 100%;
+        max-width: 560px;
+        background: linear-gradient(
+          180deg,
+          var(--cushion-light),
+          var(--cushion)
+        );
+        border-radius: 22px;
+        padding: 10px;
+        box-shadow:
+          0 20px 50px rgba(0, 0, 0, 0.45),
+          inset 0 0 0 2px rgba(0, 0, 0, 0.2);
+      }
+      .baize {
+        background:
+          radial-gradient(
+            ellipse at 50% 0%,
+            rgba(255, 255, 255, 0.06),
+            transparent 55%
+          ),
+          linear-gradient(180deg, var(--baize-1), var(--baize-2));
+        border-radius: 14px;
+        padding: 16px 14px 20px;
+        position: relative;
+        overflow: hidden;
+      }
+      .baize::before {
+        content: "";
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+        border: 1.5px solid rgba(241, 234, 217, 0.14);
+        border-radius: 10px;
+        pointer-events: none;
+      }
+      h1 {
+        font-family: "Fraunces", serif;
+        font-weight: 900;
+        font-size: 1.5rem;
+        letter-spacing: 0.02em;
+        margin: 0 0 2px;
+        text-align: center;
+        color: var(--ivory);
+      }
+      .subtitle {
+        text-align: center;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--brass);
+        margin-bottom: 16px;
+        font-weight: 600;
+      }
+
+      /* Setup screen */
+      .setup {
+        padding: 6px 4px 4px;
+      }
+      .mode-toggle {
+        display: flex;
+        gap: 6px;
+        background: rgba(0, 0, 0, 0.25);
+        padding: 4px;
+        border-radius: 10px;
+        margin-bottom: 18px;
+      }
+      .mode-btn {
+        flex: 1;
+        padding: 10px 4px;
+        border-radius: 7px;
+        background: transparent;
+        color: rgba(241, 234, 217, 0.6);
+        font-weight: 700;
+        font-size: 0.78rem;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+      .mode-btn.active {
+        background: linear-gradient(180deg, var(--brass), #a5822f);
+        color: #241a06;
+      }
+      label {
+        display: block;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--brass);
+        margin-bottom: 8px;
+        font-weight: 600;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 11px 12px;
+        border-radius: 9px;
+        border: 1.5px solid rgba(241, 234, 217, 0.25);
+        background: rgba(0, 0, 0, 0.2);
+        color: var(--ivory);
+        font-size: 0.92rem;
+        font-family: "Inter", sans-serif;
+        outline: none;
+      }
+      input[type="text"]:focus {
+        border-color: var(--brass);
+      }
+      .player-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 9px;
+      }
+      .player-row input {
+        flex: 1;
+      }
+      .team-row {
+        background: rgba(0, 0, 0, 0.16);
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 10px;
+        position: relative;
+      }
+      .team-row .team-name-input {
+        margin-bottom: 8px;
+        font-weight: 700;
+      }
+      .team-row .team-members {
+        display: flex;
+        gap: 8px;
+      }
+      .team-row .team-members input {
+        flex: 1;
+      }
+      .row-topline {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0;
+      }
+      .remove-row-btn {
+        width: 30px;
+        height: 30px;
+        min-width: 30px;
+        border-radius: 50%;
+        background: rgba(241, 234, 217, 0.12);
+        color: var(--ivory);
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .remove-row-btn:disabled {
+        opacity: 0.25;
+      }
+      .team-row .remove-row-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+      }
+      .add-row-btn {
+        width: 100%;
+        padding: 10px;
+        border-radius: 9px;
+        background: rgba(241, 234, 217, 0.08);
+        border: 1.5px dashed rgba(241, 234, 217, 0.3);
+        color: var(--ivory);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        margin-bottom: 18px;
+      }
+      button {
+        font-family: "Inter", sans-serif;
+        cursor: pointer;
+        border: none;
+      }
+      .primary-btn {
+        width: 100%;
+        padding: 13px;
+        border-radius: 10px;
+        background: linear-gradient(180deg, var(--brass), #a5822f);
+        color: #241a06;
+        font-weight: 800;
+        font-size: 0.95rem;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        margin-top: 2px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      }
+      .primary-btn:active {
+        transform: translateY(1px);
+      }
+      .setup-error {
+        color: #f2a8a8;
+        font-size: 0.72rem;
+        text-align: center;
+        margin: -10px 0 12px;
+        min-height: 1em;
+      }
+
+      /* Match screen */
+      .scorecards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .card {
+        background: rgba(0, 0, 0, 0.22);
+        border-radius: 12px;
+        padding: 10px 8px;
+        text-align: center;
+        border: 2px solid transparent;
+        position: relative;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+      .card.active {
+        background: rgba(0, 0, 0, 0.32);
+      }
+      .card .turn-tag {
+        position: absolute;
+        top: -9px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #1a1a1a;
+        font-size: 0.55rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border-radius: 20px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        white-space: nowrap;
+      }
+      .card.active .turn-tag {
+        opacity: 1;
+      }
+      .card .name {
+        font-family: "Fraunces", serif;
+        font-weight: 700;
+        font-size: 0.88rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 1px;
+      }
+      .card .members {
+        font-size: 0.6rem;
+        color: rgba(241, 234, 217, 0.55);
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .card .score {
+        font-family: "Fraunces", serif;
+        font-weight: 900;
+        font-size: 1.9rem;
+        line-height: 1.1;
+        margin: 2px 0;
+      }
+      .card .frames {
+        font-size: 0.62rem;
+        color: var(--brass);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+      }
+      .card .break {
+        font-size: 0.62rem;
+        color: rgba(241, 234, 217, 0.7);
+      }
+      .card .break b {
+        color: var(--ivory);
+      }
+
+      .status-strip {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.68rem;
+        color: rgba(241, 234, 217, 0.65);
+        margin-bottom: 10px;
+        padding: 0 2px;
+        letter-spacing: 0.03em;
+      }
+      .status-strip .reds b {
+        color: var(--red);
+        font-family: "Fraunces", serif;
+        font-size: 0.95rem;
+      }
+
+      .rack-inner {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 22px;
+      }
+      .ball-btn {
+        flex: 1;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        position: relative;
+        color: #fff;
+        font-weight: 800;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow:
+          inset -3px -4px 6px rgba(0, 0, 0, 0.35),
+          inset 2px 3px 4px rgba(255, 255, 255, 0.35),
+          0 3px 6px rgba(0, 0, 0, 0.4);
+        transition: transform 0.08s;
+      }
+      .ball-btn:active {
+        transform: scale(0.9);
+      }
+      .ball-btn:disabled {
+        opacity: 0.35;
+        box-shadow: none;
+      }
+      .ball-btn.red {
+        background: radial-gradient(circle at 35% 30%, #e5555a, var(--red));
+      }
+      .ball-btn.yellow {
+        background: radial-gradient(circle at 35% 30%, #ffe27a, var(--yellow));
+        color: #3a2c00;
+      }
+      .ball-btn.green {
+        background: radial-gradient(
+          circle at 35% 30%,
+          #4fb56e,
+          var(--green-ball)
+        );
+      }
+      .ball-btn.brown {
+        background: radial-gradient(circle at 35% 30%, #96683d, var(--brown));
+      }
+      .ball-btn.blue {
+        background: radial-gradient(circle at 35% 30%, #4f8fd6, var(--blue));
+      }
+      .ball-btn.pink {
+        background: radial-gradient(circle at 35% 30%, #f4aac2, var(--pink));
+        color: #5a1530;
+      }
+      .ball-btn.black {
+        background: radial-gradient(circle at 35% 30%, #4a4a4a, var(--black));
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .ctrl-btn {
+        padding: 11px 6px;
+        border-radius: 9px;
+        background: rgba(0, 0, 0, 0.25);
+        color: var(--ivory);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        border: 1.5px solid rgba(241, 234, 217, 0.18);
+      }
+      .ctrl-btn:active {
+        background: rgba(0, 0, 0, 0.4);
+      }
+      .ctrl-btn.wide {
+        grid-column: 1 / -1;
+      }
+      .ctrl-btn.danger {
+        color: #f2a8a8;
+        border-color: rgba(242, 168, 168, 0.3);
+      }
+      .ctrl-btn.gold {
+        color: #1a1406;
+        background: linear-gradient(180deg, var(--brass), #a5822f);
+        border: none;
+      }
+      .ctrl-btn.ghost {
+        background: transparent;
+        color: rgba(241, 234, 217, 0.55);
+        border: 1px solid rgba(241, 234, 217, 0.15);
+      }
+
+      .foul-panel {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+      .foul-panel .ftitle {
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--brass);
+        margin-bottom: 8px;
+        text-align: center;
+        font-weight: 700;
+      }
+      .foul-vals,
+      .foul-recipients {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .fval-btn {
+        flex: 1;
+        min-width: 44px;
+        padding: 9px 0;
+        border-radius: 8px;
+        background: rgba(241, 234, 217, 0.1);
+        color: var(--ivory);
+        font-weight: 800;
+        font-size: 0.85rem;
+        border: 1px solid rgba(241, 234, 217, 0.2);
+      }
+      .fval-btn:active {
+        background: rgba(241, 234, 217, 0.25);
+      }
+      .recip-btn {
+        flex: 1 1 auto;
+        padding: 9px 10px;
+        border-radius: 8px;
+        background: rgba(241, 234, 217, 0.1);
+        color: var(--ivory);
+        font-weight: 700;
+        font-size: 0.78rem;
+        border: 1px solid rgba(241, 234, 217, 0.2);
+      }
+
+      .hint {
+        text-align: center;
+        font-size: 0.63rem;
+        color: rgba(241, 234, 217, 0.45);
+        margin-top: 4px;
+        line-height: 1.5;
+      }
+      .winner-banner {
+        text-align: center;
+        background: linear-gradient(180deg, var(--brass), #a5822f);
+        color: #1a1406;
+        padding: 12px;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        font-family: "Fraunces", serif;
+        font-weight: 800;
+        font-size: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="table-frame">
+      <div class="baize">
+        <h1>Snooker Scoreboard</h1>
+        <div class="subtitle">frame tracker</div>
+
+        <!-- SETUP SCREEN -->
+        <div id="setupScreen" class="setup">
+          <div class="mode-toggle">
+            <button class="mode-btn active" data-mode="individual">
+              Individual
+            </button>
+            <button class="mode-btn" data-mode="team">Teams of two</button>
+          </div>
+
+          <div id="individualSetup">
+            <label>Players</label>
+            <div id="playerRows"></div>
+            <button class="add-row-btn" id="addPlayerBtn">+ Add player</button>
+          </div>
+
+          <div id="teamSetup" style="display: none">
+            <label>Teams</label>
+            <div id="teamRows"></div>
+            <button class="add-row-btn" id="addTeamBtn">+ Add team</button>
+          </div>
+
+          <div class="setup-error" id="setupError"></div>
+          <button class="primary-btn" id="startBtn">Rack 'em up</button>
+          <div class="hint">
+            Tap a ball to add its points to whoever's break it is. Switch turns
+            after a miss, undo any tap, and start a new frame when it's done.
+          </div>
+        </div>
+
+        <!-- MATCH SCREEN -->
+        <div id="matchScreen" style="display: none">
+          <div
+            id="winnerBanner"
+            class="winner-banner"
+            style="display: none"
+          ></div>
+
+          <div class="scorecards-grid" id="scorecardsGrid"></div>
+
+          <div class="status-strip">
+            <div>
+              Reds left:
+              <b
+                id="redsLeft"
+                style="
+                  color: var(--red);
+                  font-family: &quot;Fraunces&quot;, serif;
+                  font-size: 0.95rem;
+                "
+                >15</b
+              >
+            </div>
+            <div id="phaseLabel">Reds &amp; colours</div>
+          </div>
+
+          <div class="rack-inner">
+            <button class="ball-btn red" data-ball="red">1</button>
+            <button class="ball-btn yellow" data-ball="yellow">2</button>
+            <button class="ball-btn green" data-ball="green">3</button>
+            <button class="ball-btn brown" data-ball="brown">4</button>
+            <button class="ball-btn blue" data-ball="blue">5</button>
+            <button class="ball-btn pink" data-ball="pink">6</button>
+            <button class="ball-btn black" data-ball="black">7</button>
+          </div>
+
+          <div id="foulPanel" class="foul-panel" style="display: none">
+            <div id="foulValueStage">
+              <div class="ftitle">Foul — how many points?</div>
+              <div class="foul-vals">
+                <button class="fval-btn" data-foul="4">4</button>
+                <button class="fval-btn" data-foul="5">5</button>
+                <button class="fval-btn" data-foul="6">6</button>
+                <button class="fval-btn" data-foul="7">7</button>
+              </div>
+            </div>
+            <div id="foulRecipientStage" style="display: none">
+              <div class="ftitle">Award points to</div>
+              <div class="foul-recipients" id="foulRecipients"></div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button class="ctrl-btn" id="switchBtn">Switch turn</button>
+            <button class="ctrl-btn" id="foulBtn">Foul</button>
+            <button class="ctrl-btn" id="undoBtn">Undo</button>
+            <button class="ctrl-btn danger" id="resetRedBtn">
+              +1 Red back
+            </button>
+            <button class="ctrl-btn gold wide" id="endFrameBtn">
+              End frame
+            </button>
+            <button class="ctrl-btn wide" id="newFrameBtn">
+              New frame (keep names)
+            </button>
+            <button class="ctrl-btn ghost wide" id="newMatchBtn">
+              New match (change players)
+            </button>
+          </div>
+          <div class="hint">
+            Colours are unlimited while reds remain. Once all reds are gone, pot
+            colours in order: yellow → green → brown → blue → pink → black.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const BALL_VALUES = {
+          red: 1,
+          yellow: 2,
+          green: 3,
+          brown: 4,
+          blue: 5,
+          pink: 6,
+          black: 7,
+        };
+        const COLOUR_ORDER = [
+          "yellow",
+          "green",
+          "brown",
+          "blue",
+          "pink",
+          "black",
+        ];
+        const ACCENTS = [
+          "#e8b923",
+          "#3a8bd6",
+          "#c96b8a",
+          "#5fb56e",
+          "#e0793f",
+          "#9b7fe0",
+          "#5cc9c9",
+          "#d6667a",
+        ];
+
+        let state = null;
+        let history = [];
+        let mode = "individual";
+        let pendingFoulValue = null;
+
+        const setupScreen = document.getElementById("setupScreen");
+        const matchScreen = document.getElementById("matchScreen");
+        const playerRows = document.getElementById("playerRows");
+        const teamRows = document.getElementById("teamRows");
+        const setupError = document.getElementById("setupError");
+
+        // ---------- SETUP: mode toggle ----------
+        document.querySelectorAll(".mode-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            mode = btn.dataset.mode;
+            document
+              .querySelectorAll(".mode-btn")
+              .forEach((b) => b.classList.toggle("active", b === btn));
+            document.getElementById("individualSetup").style.display =
+              mode === "individual" ? "block" : "none";
+            document.getElementById("teamSetup").style.display =
+              mode === "team" ? "block" : "none";
+            setupError.textContent = "";
+          });
+        });
+
+        // ---------- SETUP: player rows ----------
+        function addPlayerRow(prefillName) {
+          const idx = playerRows.children.length + 1;
+          const row = document.createElement("div");
+          row.className = "player-row";
+          row.innerHTML = `<input type="text" class="player-name-input" placeholder="Player ${idx}" maxlength="18" value="${prefillName || ""}">
+      <button class="remove-row-btn" title="Remove">✕</button>`;
+          row.querySelector(".remove-row-btn").addEventListener("click", () => {
+            if (playerRows.children.length <= 2) return;
+            row.remove();
+            updateRemoveState();
+          });
+          playerRows.appendChild(row);
+          updateRemoveState();
+        }
+        function updateRemoveState() {
+          const rows = playerRows.querySelectorAll(".remove-row-btn");
+          rows.forEach((b) => (b.disabled = playerRows.children.length <= 2));
+          const trows = teamRows.querySelectorAll(".remove-row-btn");
+          trows.forEach((b) => (b.disabled = teamRows.children.length <= 2));
+        }
+        document
+          .getElementById("addPlayerBtn")
+          .addEventListener("click", () => addPlayerRow());
+
+        // ---------- SETUP: team rows ----------
+        function addTeamRow(prefillName, p1, p2) {
+          const idx = teamRows.children.length + 1;
+          const row = document.createElement("div");
+          row.className = "team-row";
+          row.innerHTML = `<button class="remove-row-btn" title="Remove">✕</button>
+      <input type="text" class="team-name-input" placeholder="Team ${idx} name (optional)" maxlength="20" value="${prefillName || ""}">
+      <div class="team-members">
+        <input type="text" class="team-p1-input" placeholder="Player A" maxlength="16" value="${p1 || ""}">
+        <input type="text" class="team-p2-input" placeholder="Player B" maxlength="16" value="${p2 || ""}">
+      </div>`;
+          row.querySelector(".remove-row-btn").addEventListener("click", () => {
+            if (teamRows.children.length <= 2) return;
+            row.remove();
+            updateRemoveState();
+          });
+          teamRows.appendChild(row);
+          updateRemoveState();
+        }
+        document
+          .getElementById("addTeamBtn")
+          .addEventListener("click", () => addTeamRow());
+
+        // seed defaults
+        addPlayerRow();
+        addPlayerRow();
+        addTeamRow();
+        addTeamRow();
+
+        // ---------- START MATCH ----------
+        function freshState(competitorDefs) {
+          return {
+            competitors: competitorDefs.map((c, i) => ({
+              id: i,
+              name: c.name,
+              members: c.members || null,
+              score: 0,
+              frames: 0,
+              bestBreak: 0,
+              curBreak: 0,
+            })),
+            turn: 0,
+            redsLeft: 15,
+            colourStage: 0,
+          };
+        }
+
+        document.getElementById("startBtn").addEventListener("click", () => {
+          setupError.textContent = "";
+          let defs = [];
+          if (mode === "individual") {
+            const inputs = [
+              ...playerRows.querySelectorAll(".player-name-input"),
+            ];
+            defs = inputs.map((inp, i) => ({
+              name: inp.value.trim() || "Player " + (i + 1),
+            }));
+            if (defs.length < 2) {
+              setupError.textContent = "Add at least 2 players.";
+              return;
+            }
+          } else {
+            const rows = [...teamRows.children];
+            defs = rows.map((row, i) => {
+              const tn = row.querySelector(".team-name-input").value.trim();
+              const p1 =
+                row.querySelector(".team-p1-input").value.trim() ||
+                "Player " + (i * 2 + 1);
+              const p2 =
+                row.querySelector(".team-p2-input").value.trim() ||
+                "Player " + (i * 2 + 2);
+              return { name: tn || p1 + " & " + p2, members: [p1, p2] };
+            });
+            if (defs.length < 2) {
+              setupError.textContent = "Add at least 2 teams.";
+              return;
+            }
+          }
+          state = freshState(defs);
+          history = [];
+          setupScreen.style.display = "none";
+          matchScreen.style.display = "block";
+          document.getElementById("winnerBanner").style.display = "none";
+          render();
+        });
+
+        // ---------- MATCH LOGIC ----------
+        function snapshot() {
+          history.push(JSON.parse(JSON.stringify(state)));
+          if (history.length > 80) history.shift();
+        }
+        function undo() {
+          if (history.length === 0) return;
+          state = JSON.parse(JSON.stringify(history.pop()));
+          closeFoulPanel();
+          render();
+        }
+        function nextIndex(i) {
+          return (i + 1) % state.competitors.length;
+        }
+
+        function potBall(ball) {
+          snapshot();
+          const val = BALL_VALUES[ball];
+          if (state.redsLeft > 0) {
+            if (ball === "red") state.redsLeft -= 1;
+          } else {
+            const expected = COLOUR_ORDER[state.colourStage];
+            if (ball === expected)
+              state.colourStage = Math.min(
+                state.colourStage + 1,
+                COLOUR_ORDER.length - 1,
+              );
+          }
+          const c = state.competitors[state.turn];
+          c.score += val;
+          c.curBreak += val;
+          if (c.curBreak > c.bestBreak) c.bestBreak = c.curBreak;
+          render();
+        }
+
+        function switchTurn() {
+          snapshot();
+          state.competitors[state.turn].curBreak = 0;
+          state.turn = nextIndex(state.turn);
+          render();
+        }
+
+        function awardFoul(recipientIdx, val) {
+          snapshot();
+          state.competitors[state.turn].curBreak = 0;
+          state.competitors[recipientIdx].score += val;
+          state.turn = nextIndex(state.turn);
+          closeFoulPanel();
+          render();
+        }
+
+        function endFrame() {
+          snapshot();
+          const maxScore = Math.max(...state.competitors.map((c) => c.score));
+          const winners = state.competitors.filter((c) => c.score === maxScore);
+          winners.forEach((w) => (w.frames += 1));
+          const banner = document.getElementById("winnerBanner");
+          banner.style.display = "block";
+          banner.textContent =
+            winners.length > 1
+              ? "Frame tied: " + winners.map((w) => w.name).join(" & ")
+              : winners[0].name + " wins the frame!";
+          render();
+        }
+
+        function newFrame() {
+          snapshot();
+          const defs = state.competitors.map((c) => ({
+            name: c.name,
+            members: c.members,
+          }));
+          const frameCounts = state.competitors.map((c) => c.frames);
+          state = freshState(defs);
+          state.competitors.forEach((c, i) => (c.frames = frameCounts[i]));
+          document.getElementById("winnerBanner").style.display = "none";
+          render();
+        }
+
+        function newMatch() {
+          matchScreen.style.display = "none";
+          setupScreen.style.display = "block";
+          document.getElementById("winnerBanner").style.display = "none";
+          closeFoulPanel();
+        }
+
+        function closeFoulPanel() {
+          pendingFoulValue = null;
+          document.getElementById("foulPanel").style.display = "none";
+          document.getElementById("foulValueStage").style.display = "block";
+          document.getElementById("foulRecipientStage").style.display = "none";
+        }
+
+        // ---------- RENDER ----------
+        function render() {
+          const grid = document.getElementById("scorecardsGrid");
+          grid.innerHTML = "";
+          state.competitors.forEach((c, i) => {
+            const accent = ACCENTS[i % ACCENTS.length];
+            const card = document.createElement("div");
+            card.className = "card" + (state.turn === i ? " active" : "");
+            card.style.setProperty("--accent", accent);
+            card.style.borderColor = state.turn === i ? accent : "transparent";
+            card.innerHTML = `
+        <div class="turn-tag" style="background:${accent}; opacity:${state.turn === i ? 1 : 0}">On break</div>
+        <div class="name">${escapeHtml(c.name)}</div>
+        ${c.members ? `<div class="members">${escapeHtml(c.members.join(" & "))}</div>` : ""}
+        <div class="score">${c.score}</div>
+        <div class="frames">Frames: ${c.frames}</div>
+        <div class="break">Break <b>${c.curBreak}</b> · Best <b>${c.bestBreak}</b></div>
+      `;
+            grid.appendChild(card);
+          });
+
+          document.getElementById("redsLeft").textContent = state.redsLeft;
+          document.querySelector(".ball-btn.red").disabled =
+            state.redsLeft <= 0;
+
+          const phaseLabel = document.getElementById("phaseLabel");
+          if (state.redsLeft > 0) {
+            phaseLabel.textContent = "Reds & colours";
+          } else {
+            const next = COLOUR_ORDER[state.colourStage];
+            phaseLabel.textContent =
+              "Next colour: " + next.charAt(0).toUpperCase() + next.slice(1);
+          }
+        }
+
+        function escapeHtml(str) {
+          const d = document.createElement("div");
+          d.textContent = str;
+          return d.innerHTML;
+        }
+
+        // ---------- EVENTS ----------
+        document.querySelectorAll(".ball-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            if (btn.disabled) return;
+            potBall(btn.dataset.ball);
+          });
+        });
+        document
+          .getElementById("switchBtn")
+          .addEventListener("click", switchTurn);
+        document.getElementById("undoBtn").addEventListener("click", undo);
+        document
+          .getElementById("endFrameBtn")
+          .addEventListener("click", endFrame);
+        document
+          .getElementById("newFrameBtn")
+          .addEventListener("click", newFrame);
+        document
+          .getElementById("newMatchBtn")
+          .addEventListener("click", newMatch);
+        document.getElementById("resetRedBtn").addEventListener("click", () => {
+          snapshot();
+          state.redsLeft = Math.min(15, state.redsLeft + 1);
+          render();
+        });
+
+        const foulPanel = document.getElementById("foulPanel");
+        document.getElementById("foulBtn").addEventListener("click", () => {
+          if (foulPanel.style.display === "none") {
+            foulPanel.style.display = "block";
+            document.getElementById("foulValueStage").style.display = "block";
+            document.getElementById("foulRecipientStage").style.display =
+              "none";
+          } else {
+            closeFoulPanel();
+          }
+        });
+        document.querySelectorAll(".fval-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const val = parseInt(btn.dataset.foul, 10);
+            const others = state.competitors.filter((c, i) => i !== state.turn);
+            if (state.competitors.length === 2) {
+              const recipientIdx = nextIndex(state.turn);
+              awardFoul(recipientIdx, val);
+              return;
+            }
+            pendingFoulValue = val;
+            document.getElementById("foulValueStage").style.display = "none";
+            const stage = document.getElementById("foulRecipientStage");
+            stage.style.display = "block";
+            const recipDiv = document.getElementById("foulRecipients");
+            recipDiv.innerHTML = "";
+            state.competitors.forEach((c, i) => {
+              if (i === state.turn) return;
+              const b = document.createElement("button");
+              b.className = "recip-btn";
+              b.textContent = c.name;
+              b.addEventListener("click", () => awardFoul(i, pendingFoulValue));
+              recipDiv.appendChild(b);
+            });
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

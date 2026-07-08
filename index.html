@@ -210,13 +210,19 @@
   /* Match screen */
   .sync-badge{
     display:none;
+    flex-direction:column;
     align-items:center;
-    justify-content:center;
-    gap:6px;
+    gap:4px;
     margin-bottom:10px;
     font-size:0.7rem;
     letter-spacing:0.03em;
     color:rgba(241,234,217,0.75);
+  }
+  .sync-badge-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
   }
   .sync-badge .sync-dot{
     width:7px; height:7px;
@@ -225,7 +231,7 @@
     display:inline-block;
     flex-shrink:0;
   }
-  .sync-badge b.sync-code{ color:var(--brass); font-family:'Fraunces',serif; letter-spacing:0.05em; }
+  .sync-badge b.sync-code, .sync-badge b.sync-view-code{ color:var(--brass); font-family:'Fraunces',serif; letter-spacing:0.05em; }
   .sync-badge .copy-code-btn{
     background:transparent;
     color:rgba(241,234,217,0.5);
@@ -233,6 +239,26 @@
     font-size:0.68rem;
     padding:0;
     margin-left:2px;
+  }
+  .no-sync-notice{
+    text-align:center;
+    font-size:0.68rem;
+    line-height:1.5;
+    color:rgba(241,234,217,0.55);
+    background:rgba(0,0,0,0.18);
+    border-radius:8px;
+    padding:8px 10px;
+    margin-bottom:10px;
+  }
+  .viewer-flag{
+    background:var(--brass);
+    color:#241a06;
+    font-size:0.58rem;
+    font-weight:800;
+    padding:2px 7px;
+    border-radius:20px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
   }
   .scorecards-grid{
     display:grid;
@@ -366,6 +392,7 @@
   .ctrl-btn.danger{ color:#f2a8a8; border-color:rgba(242,168,168,0.3); }
   .ctrl-btn.gold{ color:#1a1406; background:linear-gradient(180deg,var(--brass),#a5822f); border:none; }
   .ctrl-btn.ghost{ background:transparent; color:rgba(241,234,217,0.55); border:1px solid rgba(241,234,217,0.15); }
+  #newMatchBtn{ width:100%; margin-top:8px; }
 
   .foul-panel{
     background:rgba(0,0,0,0.3);
@@ -492,6 +519,11 @@
     font-weight:800;
     font-size:1.0rem;
   }
+
+  /* Viewer (read-only) mode */
+  #matchScreen.viewer-mode #scoringControls{ display:none; }
+  #matchScreen.viewer-mode .card{ cursor:default; }
+  #matchScreen.viewer-mode .card:active{ transform:none; }
 </style>
 </head>
 <body>
@@ -520,23 +552,34 @@
       </div>
 
       <div class="sync-setup-block">
-        <label>Room code <span>(optional — leave blank to start a new live room, or enter a code to join one)</span></label>
+        <label>Room or viewer code <span>(optional — leave blank to start a new live room, enter an edit code to score, or enter a viewer code to watch read-only)</span></label>
         <input type="text" id="roomCodeInput" placeholder="e.g. 7K3QP" maxlength="8" style="text-transform:uppercase;">
       </div>
 
       <div class="setup-error" id="setupError"></div>
       <button class="primary-btn" id="startBtn">Rack 'em up</button>
-      <div class="hint">Tap a ball to add its points to whoever's break it is. Switch turns after a miss, undo any tap, and start a new frame when it's done. Share your room code so another device can follow live.</div>
+      <div class="hint">Tap a ball to add its points to whoever's break it is. Switch turns after a miss, undo any tap, and start a new frame when it's done. Once live, you'll get an edit code to share with the scorer's device and a separate view-only code for anyone who just wants to follow along.</div>
     </div>
 
     <!-- MATCH SCREEN -->
     <div id="matchScreen" style="display:none;">
       <div id="syncBadge" class="sync-badge">
-        <span class="sync-dot"></span>
-        <span class="sync-label">Connecting…</span>
-        <span style="opacity:0.4;">·</span>
-        <span>Room <b class="sync-code"></b></span>
-        <button class="copy-code-btn" id="copyCodeBtn">copy</button>
+        <div class="sync-badge-row">
+          <span class="sync-dot"></span>
+          <span class="sync-label">Connecting…</span>
+          <span id="viewerFlag" class="viewer-flag" style="display:none;">VIEW ONLY</span>
+        </div>
+        <div class="sync-badge-row" id="ownerCodeRow" style="display:none;">
+          <span>Room <b class="sync-code"></b></span>
+          <button class="copy-code-btn" id="copyCodeBtn">copy</button>
+        </div>
+        <div class="sync-badge-row" id="viewerCodeRow" style="display:none;">
+          <span><span id="viewerRowLabel">Viewer code</span> <b class="sync-view-code"></b></span>
+          <button class="copy-code-btn" id="copyViewCodeBtn">copy</button>
+        </div>
+      </div>
+      <div id="noSyncNotice" class="no-sync-notice" style="display:none;">
+        Playing locally only — live sync isn't set up (no working Firebase config), so there's no room or viewer code to share. Scoring on this device still works fine.
       </div>
 
       <div id="winnerBanner" class="winner-banner" style="display:none;"></div>
@@ -548,36 +591,38 @@
         <div id="phaseLabel">Reds &amp; colours</div>
       </div>
 
-      <div class="rack-inner">
-        <button class="ball-btn red" data-ball="red">1</button>
-        <button class="ball-btn yellow" data-ball="yellow">2</button>
-        <button class="ball-btn green" data-ball="green">3</button>
-        <button class="ball-btn brown" data-ball="brown">4</button>
-        <button class="ball-btn blue" data-ball="blue">5</button>
-        <button class="ball-btn pink" data-ball="pink">6</button>
-        <button class="ball-btn black" data-ball="black">7</button>
-      </div>
+      <div id="scoringControls">
+        <div class="rack-inner">
+          <button class="ball-btn red" data-ball="red">1</button>
+          <button class="ball-btn yellow" data-ball="yellow">2</button>
+          <button class="ball-btn green" data-ball="green">3</button>
+          <button class="ball-btn brown" data-ball="brown">4</button>
+          <button class="ball-btn blue" data-ball="blue">5</button>
+          <button class="ball-btn pink" data-ball="pink">6</button>
+          <button class="ball-btn black" data-ball="black">7</button>
+        </div>
 
-      <div id="foulPanel" class="foul-panel" style="display:none;">
-        <div class="ftitle">Foul — deduct points from current player</div>
-        <div class="foul-vals">
-          <button class="fval-btn" data-foul="4">-4</button>
-          <button class="fval-btn" data-foul="5">-5</button>
-          <button class="fval-btn" data-foul="6">-6</button>
-          <button class="fval-btn" data-foul="7">-7</button>
+        <div id="foulPanel" class="foul-panel" style="display:none;">
+          <div class="ftitle">Foul — deduct points from current player</div>
+          <div class="foul-vals">
+            <button class="fval-btn" data-foul="4">-4</button>
+            <button class="fval-btn" data-foul="5">-5</button>
+            <button class="fval-btn" data-foul="6">-6</button>
+            <button class="fval-btn" data-foul="7">-7</button>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button class="ctrl-btn" id="switchBtn">Switch turn</button>
+          <button class="ctrl-btn" id="foulBtn">Foul</button>
+          <button class="ctrl-btn" id="undoBtn">Undo</button>
+          <button class="ctrl-btn danger" id="resetRedBtn">+1 Red back</button>
+          <button class="ctrl-btn gold wide" id="endFrameBtn">End frame</button>
+          <button class="ctrl-btn wide" id="newFrameBtn">New frame (keep names)</button>
         </div>
       </div>
-
-      <div class="controls">
-        <button class="ctrl-btn" id="switchBtn">Switch turn</button>
-        <button class="ctrl-btn" id="foulBtn">Foul</button>
-        <button class="ctrl-btn" id="undoBtn">Undo</button>
-        <button class="ctrl-btn danger" id="resetRedBtn">+1 Red back</button>
-        <button class="ctrl-btn gold wide" id="endFrameBtn">End frame</button>
-        <button class="ctrl-btn wide" id="newFrameBtn">New frame (keep names)</button>
-        <button class="ctrl-btn ghost wide" id="newMatchBtn">New match (change players)</button>
-      </div>
-      <div class="hint">Colours are unlimited while reds remain. Once all reds are gone, pot colours in order: yellow → green → brown → blue → pink → black. Tap any scorecard to switch the turn straight to that player.</div>
+      <button class="ctrl-btn ghost" id="newMatchBtn">New match (change players)</button>
+      <div class="hint" id="controlsHint">Colours are unlimited while reds remain. Once all reds are gone, pot colours in order: yellow → green → brown → blue → pink → black. Tap any scorecard to switch the turn straight to that player.</div>
 
       <div class="history-panel">
         <div class="history-title">
@@ -617,13 +662,31 @@
       firebase.initializeApp(firebaseConfig);
       db = firebase.firestore();
       firebaseReady = true;
+      // Sanity check: confirm we can actually reach this Firestore project.
+      // If the config points at a project that doesn't exist, isn't yours,
+      // or has Firestore rules/network blocking reads, this will fail and
+      // we fall back to local-only mode with a visible on-screen notice.
+      db.collection('snookerRooms').limit(1).get().catch(err=>{
+        console.error('Firestore reachability check failed — falling back to local-only mode:', err);
+        firebaseReady = false;
+        const notice = document.getElementById('noSyncNotice');
+        if(notice) notice.style.display = 'block';
+      });
     }
   } catch(e){
     console.error('Firebase init failed:', e);
     firebaseReady = false;
   }
 
-  let roomCode = null;
+  // dbRoomId: the actual Firestore document id (always the "edit" code) that the
+  // realtime listener is attached to — used for both editors and viewers.
+  // displayCode: the code shown/copyable in the badge — the edit code for the
+  // owner/editor, or the viewer's own view-only code for a viewer (so a viewer
+  // never sees or leaks the underlying edit code).
+  let dbRoomId = null;
+  let displayCode = null;
+  let currentViewCode = null; // owner's paired view-only code, shown for sharing
+  let isViewer = false;
   let syncEnabled = false;
   let unsubscribeFn = null;
   let localVersion = 0;
@@ -639,24 +702,49 @@
   function updateSyncBadge(status){
     const badge = document.getElementById('syncBadge');
     if(!badge) return;
-    if(!roomCode){ badge.style.display = 'none'; return; }
+    if(!displayCode){ badge.style.display = 'none'; return; }
     badge.style.display = 'flex';
     const dot = badge.querySelector('.sync-dot');
     const label = badge.querySelector('.sync-label');
-    const codeSpan = badge.querySelector('.sync-code');
-    codeSpan.textContent = roomCode;
+    const viewFlag = document.getElementById('viewerFlag');
+    const ownerRow = document.getElementById('ownerCodeRow');
+    const viewerRow = document.getElementById('viewerCodeRow');
+    const viewerRowLabel = document.getElementById('viewerRowLabel');
+    const copyViewBtn = document.getElementById('copyViewCodeBtn');
+
+    viewFlag.style.display = isViewer ? 'inline-block' : 'none';
+
+    if(isViewer){
+      ownerRow.style.display = 'none';
+      viewerRow.style.display = 'flex';
+      viewerRowLabel.textContent = 'Watching code';
+      viewerRow.querySelector('.sync-view-code').textContent = displayCode;
+      copyViewBtn.style.display = 'none';
+    } else {
+      ownerRow.style.display = 'flex';
+      ownerRow.querySelector('.sync-code').textContent = displayCode;
+      if(currentViewCode){
+        viewerRow.style.display = 'flex';
+        viewerRowLabel.textContent = 'Viewer code';
+        viewerRow.querySelector('.sync-view-code').textContent = currentViewCode;
+        copyViewBtn.style.display = 'inline';
+      } else {
+        viewerRow.style.display = 'none';
+      }
+    }
+
     if(status === 'live'){ dot.style.background = '#5fb56e'; label.textContent = 'Live'; }
     else if(status === 'connecting'){ dot.style.background = '#e8b923'; label.textContent = 'Connecting…'; }
     else { dot.style.background = '#c0392b'; label.textContent = 'Offline — retrying'; }
   }
 
-  function startSync(code){
+  function startSync(dbId){
     if(!firebaseReady) return;
-    roomCode = code;
+    dbRoomId = dbId;
     syncEnabled = true;
     updateSyncBadge('connecting');
     if(unsubscribeFn) unsubscribeFn();
-    unsubscribeFn = db.collection('snookerRooms').doc(code).onSnapshot(snap=>{
+    unsubscribeFn = db.collection('snookerRooms').doc(dbId).onSnapshot(snap=>{
       if(!snap.exists) return;
       updateSyncBadge('live');
       if(snap.metadata.hasPendingWrites) return; // this is the local echo of our own write
@@ -666,6 +754,7 @@
       applyingRemote = true;
       try{
         state = JSON.parse(data.json);
+        if(!isViewer && data.viewCode) currentViewCode = data.viewCode;
       } catch(e){ console.error('Bad remote state', e); }
       render();
       applyingRemote = false;
@@ -679,16 +768,28 @@
     if(unsubscribeFn) unsubscribeFn();
     unsubscribeFn = null;
     syncEnabled = false;
-    roomCode = null;
+    dbRoomId = null;
+    displayCode = null;
+    currentViewCode = null;
+    isViewer = false;
     updateSyncBadge('offline');
   }
 
+  function createViewLink(viewCode, targetRoomId){
+    if(!firebaseReady) return;
+    db.collection('snookerViewLinks').doc(viewCode).set({
+      roomId: targetRoomId,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(err=> console.error('View link creation failed', err));
+  }
+
   function saveState(){
-    if(!syncEnabled || !firebaseReady || !roomCode || !db) return;
+    if(!syncEnabled || !firebaseReady || !dbRoomId || !db || isViewer) return;
     localVersion += 1;
-    db.collection('snookerRooms').doc(roomCode).set({
+    db.collection('snookerRooms').doc(dbRoomId).set({
       json: JSON.stringify(state),
       version: localVersion,
+      viewCode: currentViewCode || null,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }).catch(err=>{
       console.error('Save failed', err);
@@ -766,7 +867,7 @@
   addPlayerRow(); addPlayerRow();
   addTeamRow(); addTeamRow();
 
-  // ---------- START MATCH ----------
+  // ---------- START / JOIN MATCH ----------
   function freshState(competitorDefs, preserveLog){
     return {
       competitors: competitorDefs.map((c,i)=>({
@@ -784,11 +885,19 @@
     if(state.log.length > 300) state.log.shift();
   }
 
+  function applyViewerModeUI(){
+    matchScreen.classList.toggle('viewer-mode', isViewer);
+    document.getElementById('newMatchBtn').textContent = isViewer ? 'Stop viewing' : 'New match (change players)';
+    document.getElementById('controlsHint').textContent = isViewer
+      ? "You're watching this match live, read-only. Ask whoever's scoring for the edit code if you'd like to take control."
+      : "Colours are unlimited while reds remain. Once all reds are gone, pot colours in order: yellow → green → brown → blue → pink → black. Tap any scorecard to switch the turn straight to that player.";
+  }
+
   document.getElementById('startBtn').addEventListener('click', async ()=>{
     setupError.textContent = '';
     const roomInput = document.getElementById('roomCodeInput').value.trim().toUpperCase();
 
-    // ----- JOIN an existing live room -----
+    // ----- JOIN an existing room, either to edit or to view -----
     if(roomInput){
       if(!firebaseReady){
         setupError.textContent = "Sync isn't set up yet — add your Firebase config in the file first.";
@@ -796,22 +905,43 @@
       }
       setupError.textContent = 'Connecting…';
       try{
-        const snap = await db.collection('snookerRooms').doc(roomInput).get();
-        if(!snap.exists){
+        let targetDbId = null;
+        let viewerMode = false;
+        let snap = await db.collection('snookerRooms').doc(roomInput).get();
+
+        if(snap.exists){
+          targetDbId = roomInput;
+        } else {
+          const linkSnap = await db.collection('snookerViewLinks').doc(roomInput).get();
+          if(linkSnap.exists){
+            targetDbId = linkSnap.data().roomId;
+            viewerMode = true;
+            snap = await db.collection('snookerRooms').doc(targetDbId).get();
+          }
+        }
+
+        if(!targetDbId || !snap.exists){
           setupError.textContent = 'No room found with code ' + roomInput + '.';
           return;
         }
+
         const data = snap.data();
         state = JSON.parse(data.json);
         localVersion = data.version || 0;
         history = [];
+        isViewer = viewerMode;
+        displayCode = roomInput;
+        currentViewCode = viewerMode ? null : (data.viewCode || null);
+
         applyingRemote = true;
         setupScreen.style.display = 'none';
         matchScreen.style.display = 'block';
         document.getElementById('winnerBanner').style.display = 'none';
+        document.getElementById('noSyncNotice').style.display = 'none';
+        applyViewerModeUI();
         render();
         applyingRemote = false;
-        startSync(roomInput);
+        startSync(targetDbId);
         setupError.textContent = '';
       } catch(err){
         console.error(err);
@@ -838,16 +968,28 @@
     }
     state = freshState(defs);
     history = [];
+    isViewer = false;
     setupScreen.style.display = 'none';
     matchScreen.style.display = 'block';
     document.getElementById('winnerBanner').style.display = 'none';
 
+    const noSyncNotice = document.getElementById('noSyncNotice');
     if(firebaseReady){
-      startSync(generateRoomCode());
+      noSyncNotice.style.display = 'none';
+      const editCode = generateRoomCode();
+      const viewCode = generateRoomCode();
+      currentViewCode = viewCode;
+      displayCode = editCode;
+      createViewLink(viewCode, editCode);
+      startSync(editCode);
     } else {
-      roomCode = null;
+      dbRoomId = null;
+      displayCode = null;
+      currentViewCode = null;
       syncEnabled = false;
+      noSyncNotice.style.display = 'block';
     }
+    applyViewerModeUI();
     render();
   });
 
@@ -857,6 +999,7 @@
     if(history.length > 80) history.shift();
   }
   function undo(){
+    if(isViewer) return;
     if(history.length === 0) return;
     state = JSON.parse(JSON.stringify(history.pop()));
     closeFoulPanel();
@@ -865,6 +1008,7 @@
   function nextIndex(i){ return (i + 1) % state.competitors.length; }
 
   function potBall(ball){
+    if(isViewer) return;
     snapshot();
     const val = BALL_VALUES[ball];
     if(state.redsLeft > 0){
@@ -883,6 +1027,7 @@
   }
 
   function selectTurn(i){
+    if(isViewer) return;
     if(i === state.turn) return;
     snapshot();
     state.competitors[state.turn].curBreak = 0;
@@ -893,10 +1038,12 @@
   }
 
   function switchTurn(){
+    if(isViewer) return;
     selectTurn(nextIndex(state.turn));
   }
 
   function awardFoul(val){
+    if(isViewer) return;
     snapshot();
     const offender = state.competitors[state.turn];
     const offenderName = offender.name;
@@ -909,6 +1056,7 @@
   }
 
   function endFrame(){
+    if(isViewer) return;
     snapshot();
     const maxScore = Math.max(...state.competitors.map(c=>c.score));
     const winners = state.competitors.filter(c=>c.score === maxScore);
@@ -924,6 +1072,7 @@
   }
 
   function newFrame(){
+    if(isViewer) return;
     snapshot();
     const defs = state.competitors.map(c=>({name:c.name, members:c.members}));
     const frameCounts = state.competitors.map(c=>c.frames);
@@ -937,6 +1086,7 @@
 
   function newMatch(){
     matchScreen.style.display = 'none';
+    matchScreen.classList.remove('viewer-mode');
     setupScreen.style.display = 'block';
     document.getElementById('winnerBanner').style.display = 'none';
     closeFoulPanel();
@@ -1029,23 +1179,30 @@
   document.getElementById('newFrameBtn').addEventListener('click', newFrame);
   document.getElementById('newMatchBtn').addEventListener('click', newMatch);
   document.getElementById('resetRedBtn').addEventListener('click', ()=>{
+    if(isViewer) return;
     snapshot();
     state.redsLeft = Math.min(15, state.redsLeft + 1);
     pushLog('Red ball placed back on table', '', null);
     render();
   });
   document.getElementById('clearHistoryBtn').addEventListener('click', ()=>{
+    if(isViewer) return;
     if(!state.log.length) return;
     snapshot();
     state.log = [];
     render();
   });
   document.getElementById('copyCodeBtn').addEventListener('click', ()=>{
-    if(roomCode && navigator.clipboard) navigator.clipboard.writeText(roomCode).catch(()=>{});
+    if(displayCode && !isViewer && navigator.clipboard) navigator.clipboard.writeText(displayCode).catch(()=>{});
+  });
+  document.getElementById('copyViewCodeBtn').addEventListener('click', ()=>{
+    const code = isViewer ? displayCode : currentViewCode;
+    if(code && navigator.clipboard) navigator.clipboard.writeText(code).catch(()=>{});
   });
 
   const foulPanel = document.getElementById('foulPanel');
   document.getElementById('foulBtn').addEventListener('click', ()=>{
+    if(isViewer) return;
     if(foulPanel.style.display === 'none'){
       foulPanel.style.display = 'block';
       setBallsDisabled(true);

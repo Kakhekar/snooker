@@ -524,11 +524,170 @@
   #matchScreen.viewer-mode #scoringControls{ display:none; }
   #matchScreen.viewer-mode .card{ cursor:default; }
   #matchScreen.viewer-mode .card:active{ transform:none; }
+
+  /* ================= Live comments + reactions (Insta-Live style) ================= */
+  .reactions-layer{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:60;
+  }
+  .floating-emoji{
+    position:absolute;
+    bottom:6px;
+    display:inline-block;
+    line-height:1;
+    filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+    animation-name:floatUp;
+    animation-timing-function:cubic-bezier(.17,.67,.4,1);
+    animation-fill-mode:forwards;
+    will-change:transform, opacity;
+  }
+  @keyframes floatUp{
+    0%{ transform:translate(0,0) scale(0.5) rotate(0deg); opacity:0; }
+    12%{ opacity:1; transform:translate(0,-8%) scale(1) rotate(-4deg); }
+    100%{ transform:translate(var(--drift,20px), -300px) scale(1.05) rotate(6deg); opacity:0; }
+  }
+
+  .comments-panel{
+    background:rgba(0,0,0,0.24);
+    border-radius:10px;
+    padding:10px;
+    margin-top:12px;
+  }
+  .comments-title{
+    font-size:0.66rem;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--brass);
+    font-weight:700;
+    margin-bottom:8px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .comments-title .live-dot{
+    width:6px; height:6px;
+    border-radius:50%;
+    background:#e5555a;
+    display:inline-block;
+    animation:livePulse 1.4s ease-in-out infinite;
+  }
+  @keyframes livePulse{
+    0%,100%{ opacity:1; }
+    50%{ opacity:0.35; }
+  }
+  .comments-note{
+    text-align:center;
+    font-size:0.63rem;
+    color:rgba(241,234,217,0.4);
+    margin:-2px 0 9px;
+    line-height:1.4;
+  }
+  /* Comments popup layer — overlays the baize, bubbles pop in near the
+     bottom-left, sit for a few seconds, then fade out (Insta Live style). */
+  .comments-popup-layer{
+    position:absolute;
+    left:12px;
+    right:64px;
+    bottom:12px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    gap:5px;
+    pointer-events:none;
+  }
+  .comment-bubble{
+    align-self:flex-start;
+    max-width:100%;
+    font-size:0.76rem;
+    line-height:1.35;
+    color:rgba(241,234,217,0.95);
+    background:rgba(10,20,15,0.65);
+    backdrop-filter:blur(2px);
+    border-radius:14px;
+    padding:6px 10px;
+    word-break:break-word;
+    box-shadow:0 3px 8px rgba(0,0,0,0.3);
+    animation-name:commentPop;
+    animation-timing-function:ease-out;
+    animation-fill-mode:forwards;
+  }
+  .comment-bubble .comment-name{
+    font-weight:800;
+    margin-right:5px;
+  }
+  @keyframes commentPop{
+    0%{ opacity:0; transform:translateY(10px) scale(0.94); }
+    8%{ opacity:1; transform:translateY(0) scale(1); }
+    82%{ opacity:1; transform:translateY(0) scale(1); }
+    100%{ opacity:0; transform:translateY(-8px) scale(0.98); }
+  }
+  .reaction-bar{
+    display:flex;
+    gap:5px;
+    margin-bottom:8px;
+    flex-wrap:wrap;
+  }
+  .emoji-btn{
+    flex:1;
+    min-width:32px;
+    padding:7px 0;
+    border-radius:9px;
+    background:rgba(241,234,217,0.08);
+    border:1px solid rgba(241,234,217,0.15);
+    font-size:1.05rem;
+    line-height:1;
+    transition:transform .12s, background .12s;
+  }
+  .emoji-btn:active{ transform:scale(0.82); background:rgba(241,234,217,0.22); }
+  .comment-input-row{
+    display:flex;
+    gap:6px;
+  }
+  .comment-name-input{
+    flex:0 0 84px;
+    width:84px;
+    padding:9px 8px;
+    border-radius:8px;
+    border:1.5px solid rgba(241,234,217,0.22);
+    background:rgba(0,0,0,0.22);
+    color:var(--ivory);
+    font-size:0.72rem;
+    font-family:'Inter',sans-serif;
+    outline:none;
+  }
+  .comment-text-input{
+    flex:1;
+    min-width:0;
+    padding:9px 10px;
+    border-radius:8px;
+    border:1.5px solid rgba(241,234,217,0.22);
+    background:rgba(0,0,0,0.22);
+    color:var(--ivory);
+    font-size:0.78rem;
+    font-family:'Inter',sans-serif;
+    outline:none;
+  }
+  .comment-name-input:focus, .comment-text-input:focus{ border-color:var(--brass); }
+  .comment-send-btn{
+    flex:0 0 40px;
+    width:40px;
+    border-radius:8px;
+    background:linear-gradient(180deg,var(--brass),#a5822f);
+    color:#241a06;
+    font-size:1rem;
+    font-weight:800;
+  }
+  .comment-send-btn:active{ transform:translateY(1px); }
 </style>
 </head>
 <body>
 <div class="table-frame">
   <div class="baize">
+    <div class="reactions-layer" id="reactionsLayer"></div>
+    <div class="comments-popup-layer" id="commentsPopupLayer"></div>
     <h1>Snooker Scoreboard</h1>
     <div class="subtitle">frame tracker</div>
 
@@ -558,7 +717,7 @@
 
       <div class="setup-error" id="setupError"></div>
       <button class="primary-btn" id="startBtn">Rack 'em up</button>
-      <div class="hint">Tap a ball to add its points to whoever's break it is. Switch turns after a miss, undo any tap, and start a new frame when it's done. Once live, you'll get an edit code to share with the scorer's device and a separate view-only code for anyone who just wants to follow along.</div>
+      <div class="hint">Tap a ball to add its points to whoever's break it is. Switch turns after a miss, undo any tap, and start a new frame when it's done. Once live, you'll get an edit code to share with the scorer's device and a separate view-only code for anyone who just wants to follow along. Everyone in the room — scorer and viewers alike — can drop comments and emoji reactions.</div>
     </div>
 
     <!-- MATCH SCREEN -->
@@ -579,7 +738,7 @@
         </div>
       </div>
       <div id="noSyncNotice" class="no-sync-notice" style="display:none;">
-        Playing locally only — live sync isn't set up (no working Firebase config), so there's no room or viewer code to share. Scoring on this device still works fine.
+        Playing locally only — live sync isn't set up (no working Firebase config), so there's no room or viewer code to share. Scoring, comments and reactions on this device still work fine.
       </div>
 
       <div id="winnerBanner" class="winner-banner" style="display:none;"></div>
@@ -630,6 +789,27 @@
           <button class="clear-history-btn" id="clearHistoryBtn">clear</button>
         </div>
         <div class="history-list" id="historyList"></div>
+      </div>
+
+      <!-- Live comments + emoji reactions -->
+      <div class="comments-panel">
+        <div class="comments-title"><span class="live-dot"></span> Live comments</div>
+        <div class="comments-note">Comments and reactions pop up on screen for a few seconds, like a live stream — nothing is kept permanently.</div>
+        <div class="reaction-bar" id="reactionBar">
+          <button class="emoji-btn" data-emoji="👏" title="Applause">👏</button>
+          <button class="emoji-btn" data-emoji="🔥" title="Fire">🔥</button>
+          <button class="emoji-btn" data-emoji="😮" title="Wow">😮</button>
+          <button class="emoji-btn" data-emoji="😂" title="Funny">😂</button>
+          <button class="emoji-btn" data-emoji="👍" title="Nice">👍</button>
+          <button class="emoji-btn" data-emoji="🎱" title="Great shot">🎱</button>
+          <button class="emoji-btn" data-emoji="💚" title="Love it">💚</button>
+          <button class="emoji-btn" data-emoji="🙌" title="Celebrate">🙌</button>
+        </div>
+        <div class="comment-input-row">
+          <input type="text" id="commentNameInput" class="comment-name-input" placeholder="Name" maxlength="16">
+          <input type="text" id="commentTextInput" class="comment-text-input" placeholder="Say something…" maxlength="140">
+          <button class="comment-send-btn" id="commentSendBtn">➤</button>
+        </div>
       </div>
     </div>
 
@@ -738,6 +918,13 @@
     else { dot.style.background = '#c0392b'; label.textContent = 'Offline — retrying'; }
   }
 
+  function ensureStateShape(){
+    // Backfill fields for rooms/state created before comments & reactions existed.
+    if(!state) return;
+    if(!Array.isArray(state.comments)) state.comments = [];
+    if(!('reaction' in state)) state.reaction = null;
+  }
+
   function startSync(dbId){
     if(!firebaseReady) return;
     dbRoomId = dbId;
@@ -749,11 +936,12 @@
       updateSyncBadge('live');
       if(snap.metadata.hasPendingWrites) return; // this is the local echo of our own write
       const data = snap.data();
-      if(!data || data.version === localVersion) return; // already in sync
-      localVersion = data.version;
+      if(!data) return;
+      localVersion = data.version || localVersion;
       applyingRemote = true;
       try{
         state = JSON.parse(data.json);
+        ensureStateShape();
         if(!isViewer && data.viewCode) currentViewCode = data.viewCode;
       } catch(e){ console.error('Bad remote state', e); }
       render();
@@ -796,11 +984,56 @@
       updateSyncBadge('offline');
     });
   }
+
+  // Comments and emoji reactions are allowed from viewers too (like Insta Live
+  // chat), so this writes only the fields that change and merges rather than
+  // overwriting the whole document — it never touches viewCode, so a viewer's
+  // write can't clobber the room's sharing codes.
+  function pushCommentOrReaction(){
+    if(!syncEnabled || !firebaseReady || !dbRoomId || !db) return;
+    localVersion += 1;
+    db.collection('snookerRooms').doc(dbRoomId).set({
+      json: JSON.stringify(state),
+      version: localVersion,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true}).catch(err=>{
+      console.error('Comment/reaction sync failed', err);
+    });
+  }
   // ================= END FIREBASE SETUP =================
 
   let state = null;
   let history = [];
   let mode = 'individual';
+
+  // ---- commenter identity (kept locally on this device/browser) ----
+  let myName = '';
+  try{ myName = localStorage.getItem('snookerCommenterName') || ''; } catch(e){ /* storage unavailable */ }
+  const myAccent = ACCENTS[Math.floor(Math.random()*ACCENTS.length)];
+  let lastAnimatedReactionId = null;
+
+  // ---- comments are ephemeral, like Insta Live: pop up, sit a few seconds,
+  // fade out, and then get pruned out of the synced state entirely. ----
+  const COMMENT_DISPLAY_MS = 4500;               // how long a bubble stays on screen
+  const COMMENT_PRUNE_AFTER_MS = 9000;            // grace period before it's deleted from the shared/synced state, so slower-joining devices still get to see it
+  const shownCommentIds = new Set();              // comment ids already popped up on this device
+  let commentPruneTimer = null;
+  function startCommentPruning(){
+    stopCommentPruning();
+    commentPruneTimer = setInterval(pruneExpiredComments, 2000);
+  }
+  function stopCommentPruning(){
+    if(commentPruneTimer){ clearInterval(commentPruneTimer); commentPruneTimer = null; }
+  }
+  function pruneExpiredComments(){
+    if(!state || !Array.isArray(state.comments) || !state.comments.length) return;
+    const now = Date.now();
+    const before = state.comments.length;
+    state.comments = state.comments.filter(c => (now - (c.ts||0)) < COMMENT_PRUNE_AFTER_MS);
+    if(state.comments.length !== before && !applyingRemote){
+      pushCommentOrReaction();
+    }
+  }
 
   const setupScreen = document.getElementById('setupScreen');
   const matchScreen = document.getElementById('matchScreen');
@@ -868,7 +1101,7 @@
   addTeamRow(); addTeamRow();
 
   // ---------- START / JOIN MATCH ----------
-  function freshState(competitorDefs, preserveLog){
+  function freshState(competitorDefs, preserveLog, preserveComments){
     return {
       competitors: competitorDefs.map((c,i)=>({
         id:i, name:c.name, members:c.members||null,
@@ -877,7 +1110,9 @@
       turn:0,
       redsLeft:15,
       colourStage:0,
-      log: preserveLog ? preserveLog.slice() : []
+      log: preserveLog ? preserveLog.slice() : [],
+      comments: preserveComments ? preserveComments.slice() : [],
+      reaction: null
     };
   }
   function pushLog(text, val, accent){
@@ -889,8 +1124,23 @@
     matchScreen.classList.toggle('viewer-mode', isViewer);
     document.getElementById('newMatchBtn').textContent = isViewer ? 'Stop viewing' : 'New match (change players)';
     document.getElementById('controlsHint').textContent = isViewer
-      ? "You're watching this match live, read-only. Ask whoever's scoring for the edit code if you'd like to take control."
+      ? "You're watching this match live, read-only. Ask whoever's scoring for the edit code if you'd like to take control. You can still comment and react below."
       : "Colours are unlimited while reds remain. Once all reds are gone, pot colours in order: yellow → green → brown → blue → pink → black. Tap any scorecard to switch the turn straight to that player.";
+  }
+
+  function initCommentsUI(){
+    const nameInput = document.getElementById('commentNameInput');
+    if(nameInput) nameInput.value = myName;
+    lastAnimatedReactionId = (state && state.reaction) ? state.reaction.id : null;
+    shownCommentIds.clear();
+    const popupLayer = document.getElementById('commentsPopupLayer');
+    if(popupLayer) popupLayer.innerHTML = '';
+    // don't pop up comments that were already sitting there before we joined —
+    // just mark them as seen so only genuinely new ones animate in.
+    if(state && Array.isArray(state.comments)){
+      state.comments.forEach(c => shownCommentIds.add(c.id));
+    }
+    startCommentPruning();
   }
 
   document.getElementById('startBtn').addEventListener('click', async ()=>{
@@ -927,6 +1177,7 @@
 
         const data = snap.data();
         state = JSON.parse(data.json);
+        ensureStateShape();
         localVersion = data.version || 0;
         history = [];
         isViewer = viewerMode;
@@ -939,6 +1190,7 @@
         document.getElementById('winnerBanner').style.display = 'none';
         document.getElementById('noSyncNotice').style.display = 'none';
         applyViewerModeUI();
+        initCommentsUI();
         render();
         applyingRemote = false;
         startSync(targetDbId);
@@ -990,6 +1242,7 @@
       noSyncNotice.style.display = 'block';
     }
     applyViewerModeUI();
+    initCommentsUI();
     render();
   });
 
@@ -1077,7 +1330,8 @@
     const defs = state.competitors.map(c=>({name:c.name, members:c.members}));
     const frameCounts = state.competitors.map(c=>c.frames);
     const preservedLog = state.log;
-    state = freshState(defs, preservedLog);
+    const preservedComments = state.comments;
+    state = freshState(defs, preservedLog, preservedComments);
     state.competitors.forEach((c,i)=> c.frames = frameCounts[i]);
     pushLog('New frame started', '', null);
     document.getElementById('winnerBanner').style.display = 'none';
@@ -1091,6 +1345,10 @@
     document.getElementById('winnerBanner').style.display = 'none';
     closeFoulPanel();
     stopSync();
+    stopCommentPruning();
+    shownCommentIds.clear();
+    const popupLayer = document.getElementById('commentsPopupLayer');
+    if(popupLayer) popupLayer.innerHTML = '';
   }
 
   function closeFoulPanel(){
@@ -1107,6 +1365,94 @@
         btn.disabled = (btn.dataset.ball === 'red' && state.redsLeft <= 0);
       }
     });
+  }
+
+  // ---------- LIVE COMMENTS + REACTIONS ----------
+  function spawnFloatingEmoji(emoji){
+    const layer = document.getElementById('reactionsLayer');
+    if(!layer || !emoji) return;
+    const el = document.createElement('span');
+    el.className = 'floating-emoji';
+    el.textContent = emoji;
+    const leftPct = 52 + Math.random()*38;      // originate lower-right, like Insta Live
+    const drift = Math.round(Math.random()*70 - 35) + 'px';
+    const size = (1.3 + Math.random()*0.9).toFixed(2) + 'rem';
+    const duration = (2.1 + Math.random()*0.7).toFixed(2) + 's';
+    el.style.left = leftPct + '%';
+    el.style.fontSize = size;
+    el.style.setProperty('--drift', drift);
+    el.style.animationDuration = duration;
+    layer.appendChild(el);
+    const cleanup = ()=> el.remove();
+    el.addEventListener('animationend', cleanup);
+    setTimeout(cleanup, 3500); // fallback in case animationend doesn't fire
+  }
+
+  function sendReaction(emoji){
+    if(!state) return;
+    const id = Date.now() + '-' + Math.random().toString(36).slice(2,7);
+    spawnFloatingEmoji(emoji); // optimistic local animation
+    lastAnimatedReactionId = id; // don't re-animate when our own write echoes back
+    state.reaction = {id, emoji};
+    if(!applyingRemote) pushCommentOrReaction();
+  }
+
+  function submitComment(){
+    const textInput = document.getElementById('commentTextInput');
+    const nameInput = document.getElementById('commentNameInput');
+    if(!state || !textInput) return;
+    const text = textInput.value.trim();
+    if(!text) return;
+    myName = nameInput.value.trim().slice(0,16) || 'Guest';
+    try{ localStorage.setItem('snookerCommenterName', myName); } catch(e){ /* storage unavailable */ }
+
+    if(!Array.isArray(state.comments)) state.comments = [];
+    state.comments.push({
+      id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
+      name: myName,
+      text: text.slice(0,140),
+      accent: myAccent,
+      ts: Date.now()
+    });
+    // hard cap so the synced payload can't balloon between prune sweeps
+    if(state.comments.length > 40) state.comments.shift();
+    textInput.value = '';
+    processComments();
+    if(!applyingRemote) pushCommentOrReaction();
+  }
+
+  // Pops up a bubble for a comment, lets it sit for COMMENT_DISPLAY_MS, then
+  // fades it out and removes it from the DOM — nothing lingers on screen.
+  function spawnCommentBubble(comment){
+    const layer = document.getElementById('commentsPopupLayer');
+    if(!layer || !comment) return;
+    const el = document.createElement('div');
+    el.className = 'comment-bubble';
+    el.innerHTML = `<span class="comment-name" style="color:${comment.accent || 'var(--brass)'}">${escapeHtml(comment.name || 'Guest')}</span>${escapeHtml(comment.text)}`;
+    el.style.animationDuration = (COMMENT_DISPLAY_MS/1000) + 's';
+    layer.appendChild(el);
+    while(layer.children.length > 4) layer.removeChild(layer.firstChild); // keep the stack short
+    const cleanup = ()=> el.remove();
+    el.addEventListener('animationend', cleanup);
+    setTimeout(cleanup, COMMENT_DISPLAY_MS + 400); // fallback in case animationend doesn't fire
+  }
+
+  // Finds comments this device hasn't popped up yet and animates them in.
+  // Comments already stale by the time we see them (e.g. just joined the
+  // room) are marked seen without animating, so nothing flashes on arrival.
+  function processComments(){
+    if(!state || !Array.isArray(state.comments)) return;
+    const now = Date.now();
+    state.comments.forEach(c=>{
+      if(shownCommentIds.has(c.id)) return;
+      shownCommentIds.add(c.id);
+      const age = now - (c.ts || now);
+      if(age < COMMENT_DISPLAY_MS) spawnCommentBubble(c);
+    });
+    if(shownCommentIds.size > 300){
+      const stillPresent = new Set(state.comments.map(c=>c.id));
+      shownCommentIds.forEach(id=>{ if(!stillPresent.has(id)) shownCommentIds.delete(id); });
+    }
   }
 
   // ---------- RENDER ----------
@@ -1143,6 +1489,14 @@
     }
 
     renderHistory();
+    processComments();
+
+    // Animate any reaction that hasn't been shown on this device yet
+    // (covers reactions arriving from other devices in the same room).
+    if(state.reaction && state.reaction.id !== lastAnimatedReactionId){
+      lastAnimatedReactionId = state.reaction.id;
+      spawnFloatingEmoji(state.reaction.emoji);
+    }
 
     if(!applyingRemote) saveState();
   }
@@ -1215,6 +1569,20 @@
       const val = parseInt(btn.dataset.foul, 10);
       awardFoul(val);
     });
+  });
+
+  // Comments + emoji reactions — available to owner and viewers alike
+  document.querySelectorAll('.emoji-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> sendReaction(btn.dataset.emoji));
+  });
+  document.getElementById('commentSendBtn').addEventListener('click', submitComment);
+  document.getElementById('commentTextInput').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); submitComment(); }
+  });
+  document.getElementById('commentNameInput').addEventListener('change', ()=>{
+    const nameInput = document.getElementById('commentNameInput');
+    myName = nameInput.value.trim().slice(0,16);
+    try{ localStorage.setItem('snookerCommenterName', myName); } catch(e){ /* storage unavailable */ }
   });
 
 })();

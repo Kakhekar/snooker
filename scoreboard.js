@@ -555,10 +555,10 @@
     const el = document.createElement('span');
     el.className = 'floating-emoji';
     el.textContent = emoji;
-    const leftPct = 52 + Math.random()*38;      // originate lower-right, like Insta Live
-    const drift = Math.round(Math.random()*70 - 35) + 'px';
-    const size = (1.3 + Math.random()*0.9).toFixed(2) + 'rem';
-    const duration = (2.1 + Math.random()*0.7).toFixed(2) + 's';
+    const leftPct = 4 + Math.random()*88;        // spread across the full width, like rain
+    const drift = Math.round(Math.random()*60 - 30) + 'px';
+    const size = (1.2 + Math.random()*0.9).toFixed(2) + 'rem';
+    const duration = (2.6 + Math.random()*1.4).toFixed(2) + 's';
     el.style.left = leftPct + '%';
     el.style.fontSize = size;
     el.style.setProperty('--drift', drift);
@@ -566,13 +566,22 @@
     layer.appendChild(el);
     const cleanup = ()=> el.remove();
     el.addEventListener('animationend', cleanup);
-    setTimeout(cleanup, 3500); // fallback in case animationend doesn't fire
+    setTimeout(cleanup, 4500); // fallback in case animationend doesn't fire
+  }
+
+  // A single tap drops a little shower of the same emoji, staggered slightly,
+  // rather than just one drop — reads more like rain.
+  function spawnEmojiRain(emoji){
+    const drops = 5 + Math.floor(Math.random()*3); // 5-7 drops
+    for(let i=0;i<drops;i++){
+      setTimeout(()=> spawnFloatingEmoji(emoji), i * (70 + Math.random()*90));
+    }
   }
 
   function sendReaction(emoji){
     if(!state) return;
     const id = Date.now() + '-' + Math.random().toString(36).slice(2,7);
-    spawnFloatingEmoji(emoji); // optimistic local animation
+    spawnEmojiRain(emoji); // optimistic local animation
     lastAnimatedReactionId = id; // don't re-animate when our own write echoes back
     state.reaction = {id, emoji};
     if(!applyingRemote) pushCommentOrReaction();
@@ -676,7 +685,7 @@
     // (covers reactions arriving from other devices in the same room).
     if(state.reaction && state.reaction.id !== lastAnimatedReactionId){
       lastAnimatedReactionId = state.reaction.id;
-      spawnFloatingEmoji(state.reaction.emoji);
+      spawnEmojiRain(state.reaction.emoji);
     }
 
     if(!applyingRemote) saveState();

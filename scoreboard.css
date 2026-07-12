@@ -1,4 +1,4 @@
-  :root{
+:root{
     --baize-1:#0d4d38;
     --baize-2:#0a3d2c;
     --cushion:#5c2e18;
@@ -514,28 +514,31 @@
   #matchScreen.viewer-mode .card:active{ transform:none; }
 
   /* ================= Live comments + reactions (Insta-Live style) ================= */
+  /* Fixed to the viewport (not the scoreboard card) so the rain is visible
+     no matter how far the page is scrolled. */
   .reactions-layer{
-    position:absolute;
+    position:fixed;
     inset:0;
     pointer-events:none;
     overflow:hidden;
-    z-index:60;
+    z-index:9998;
   }
   .floating-emoji{
     position:absolute;
-    bottom:6px;
+    top:-48px;
     display:inline-block;
     line-height:1;
     filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35));
-    animation-name:floatUp;
-    animation-timing-function:cubic-bezier(.17,.67,.4,1);
+    animation-name:emojiRain;
+    animation-timing-function:cubic-bezier(.4,0,.7,1);
     animation-fill-mode:forwards;
     will-change:transform, opacity;
   }
-  @keyframes floatUp{
+  @keyframes emojiRain{
     0%{ transform:translate(0,0) scale(0.5) rotate(0deg); opacity:0; }
-    12%{ opacity:1; transform:translate(0,-8%) scale(1) rotate(-4deg); }
-    100%{ transform:translate(var(--drift,20px), -300px) scale(1.05) rotate(6deg); opacity:0; }
+    8%{ opacity:1; transform:translate(0,4vh) scale(1) rotate(-4deg); }
+    92%{ opacity:1; }
+    100%{ transform:translate(var(--drift,20px), 108vh) scale(1.05) rotate(10deg); opacity:0; }
   }
 
   .comments-panel{
@@ -573,31 +576,33 @@
     margin:-2px 0 9px;
     line-height:1.4;
   }
-  /* Comments popup layer — overlays the baize, bubbles pop in near the
-     bottom-left, sit for a few seconds, then fade out (Insta Live style). */
+  /* Comments popup layer — fixed to the viewport (not the scoreboard), so
+     bubbles pop in at the top-right and stay visible no matter how far the
+     page is scrolled. Sits for a few seconds, then fades out (Insta Live). */
   .comments-popup-layer{
-    position:absolute;
-    left:12px;
-    right:64px;
-    bottom:12px;
+    position:fixed;
+    top:14px;
+    right:14px;
+    width:min(260px, 62vw);
     display:flex;
     flex-direction:column;
-    justify-content:flex-end;
-    gap:5px;
+    align-items:flex-end;
+    gap:6px;
     pointer-events:none;
+    z-index:9999;
   }
   .comment-bubble{
-    align-self:flex-start;
     max-width:100%;
     font-size:0.76rem;
     line-height:1.35;
     color:rgba(241,234,217,0.95);
-    background:rgba(10,20,15,0.65);
-    backdrop-filter:blur(2px);
+    background:rgba(10,20,15,0.78);
+    backdrop-filter:blur(3px);
     border-radius:14px;
     padding:6px 10px;
     word-break:break-word;
-    box-shadow:0 3px 8px rgba(0,0,0,0.3);
+    box-shadow:0 4px 12px rgba(0,0,0,0.4);
+    border:1px solid rgba(241,234,217,0.1);
     animation-name:commentPop;
     animation-timing-function:ease-out;
     animation-fill-mode:forwards;
@@ -607,10 +612,10 @@
     margin-right:5px;
   }
   @keyframes commentPop{
-    0%{ opacity:0; transform:translateY(10px) scale(0.94); }
-    8%{ opacity:1; transform:translateY(0) scale(1); }
-    82%{ opacity:1; transform:translateY(0) scale(1); }
-    100%{ opacity:0; transform:translateY(-8px) scale(0.98); }
+    0%{ opacity:0; transform:translateX(14px) scale(0.94); }
+    8%{ opacity:1; transform:translateX(0) scale(1); }
+    82%{ opacity:1; transform:translateX(0) scale(1); }
+    100%{ opacity:0; transform:translateX(8px) scale(0.98); }
   }
   .reaction-bar{
     display:flex;

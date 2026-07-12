@@ -7,13 +7,13 @@
   // Replace this with YOUR project's config from the Firebase console:
   // Project settings → General → Your apps → (web app) → SDK setup and configuration
   const firebaseConfig = {
-  apiKey: "AIzaSyAScQGHBi_mF7cV92BjCrijrsVSSiNdgS0",
-  authDomain: "snook-4b0e1.firebaseapp.com",
-  projectId: "snook-4b0e1",
-  storageBucket: "snook-4b0e1.firebasestorage.app",
-  messagingSenderId: "396453589754",
-  appId: "1:396453589754:web:bac89a3f54d15bc6124f43",
-  measurementId: "G-5F5BZLGE5F"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
   let firebaseReady = false;

@@ -1,4 +1,4 @@
-  :root{
+:root{
     --baize-1:#0d4d38;
     --baize-2:#0a3d2c;
     --cushion:#5c2e18;
@@ -573,31 +573,33 @@
     margin:-2px 0 9px;
     line-height:1.4;
   }
-  /* Comments popup layer — overlays the baize, bubbles pop in near the
-     bottom-left, sit for a few seconds, then fade out (Insta Live style). */
+  /* Comments popup layer — fixed to the viewport (not the scoreboard), so
+     bubbles pop in at the top-right and stay visible no matter how far the
+     page is scrolled. Sits for a few seconds, then fades out (Insta Live). */
   .comments-popup-layer{
-    position:absolute;
-    left:12px;
-    right:64px;
-    bottom:12px;
+    position:fixed;
+    top:14px;
+    right:14px;
+    width:min(260px, 62vw);
     display:flex;
     flex-direction:column;
-    justify-content:flex-end;
-    gap:5px;
+    align-items:flex-end;
+    gap:6px;
     pointer-events:none;
+    z-index:9999;
   }
   .comment-bubble{
-    align-self:flex-start;
     max-width:100%;
     font-size:0.76rem;
     line-height:1.35;
     color:rgba(241,234,217,0.95);
-    background:rgba(10,20,15,0.65);
-    backdrop-filter:blur(2px);
+    background:rgba(10,20,15,0.78);
+    backdrop-filter:blur(3px);
     border-radius:14px;
     padding:6px 10px;
     word-break:break-word;
-    box-shadow:0 3px 8px rgba(0,0,0,0.3);
+    box-shadow:0 4px 12px rgba(0,0,0,0.4);
+    border:1px solid rgba(241,234,217,0.1);
     animation-name:commentPop;
     animation-timing-function:ease-out;
     animation-fill-mode:forwards;
@@ -607,10 +609,10 @@
     margin-right:5px;
   }
   @keyframes commentPop{
-    0%{ opacity:0; transform:translateY(10px) scale(0.94); }
-    8%{ opacity:1; transform:translateY(0) scale(1); }
-    82%{ opacity:1; transform:translateY(0) scale(1); }
-    100%{ opacity:0; transform:translateY(-8px) scale(0.98); }
+    0%{ opacity:0; transform:translateX(14px) scale(0.94); }
+    8%{ opacity:1; transform:translateX(0) scale(1); }
+    82%{ opacity:1; transform:translateX(0) scale(1); }
+    100%{ opacity:0; transform:translateX(8px) scale(0.98); }
   }
   .reaction-bar{
     display:flex;

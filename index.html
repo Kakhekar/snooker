@@ -109,26 +109,17 @@
         </div>
       </div>
       <button class="ctrl-btn ghost" id="newMatchBtn">New match (change players)</button>
-      <div class="hint" id="controlsHint">Colours are unlimited while reds remain. Once all reds are gone, pot colours in order: yellow → green → brown → blue → pink → black. Tap any scorecard to switch the turn straight to that player.</div>
-
-      <div class="history-panel">
-        <div class="history-title">
-          <span>Match history</span>
-          <button class="clear-history-btn" id="clearHistoryBtn">clear</button>
-        </div>
-        <div class="history-list" id="historyList"></div>
-      </div>
+      <!-- <div class="hint" id="controlsHint">Colours are unlimited while reds remain. Once all reds are gone, pot colours in order: yellow → green → brown → blue → pink → black. Tap any scorecard to switch the turn straight to that player.</div> -->
 
       <!-- Live comments + emoji reactions -->
       <div class="comments-panel">
         <div class="comments-title"><span class="live-dot"></span> Live comments</div>
-        <div class="comments-note">Comments and reactions pop up on screen for a few seconds, like a live stream — nothing is kept permanently.</div>
+        <!-- <div class="comments-note">Comments and reactions pop up on screen for a few seconds, like a live stream — nothing is kept permanently.</div> -->
         <div class="reaction-bar" id="reactionBar">
           <button class="emoji-btn" data-emoji="👏" title="Applause">👏</button>
           <button class="emoji-btn" data-emoji="🔥" title="Fire">🔥</button>
           <button class="emoji-btn" data-emoji="😮" title="Wow">😮</button>
           <button class="emoji-btn" data-emoji="😂" title="Funny">😂</button>
-          <button class="emoji-btn" data-emoji="👍" title="Nice">👍</button>
           <button class="emoji-btn" data-emoji="🎱" title="Great shot">🎱</button>
           <button class="emoji-btn" data-emoji="💚" title="Love it">💚</button>
           <button class="emoji-btn" data-emoji="🙌" title="Celebrate">🙌</button>
@@ -138,6 +129,14 @@
           <input type="text" id="commentTextInput" class="comment-text-input" placeholder="Say something…" maxlength="140">
           <button class="comment-send-btn" id="commentSendBtn">➤</button>
         </div>
+      </div>
+
+      <div class="history-panel">
+        <div class="history-title">
+          <span>Match history</span>
+          <button class="clear-history-btn" id="clearHistoryBtn">clear</button>
+        </div>
+        <div class="history-list" id="historyList"></div>
       </div>
     </div>
 

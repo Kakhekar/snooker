@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // One document per live match room, keyed by the 5-character edit code.
+    match /snookerRooms/{roomId} {
+      allow read: true;
+      allow create, update: if request.resource.data.keys().hasAll(['json', 'version'])
+                              && request.resource.data.json is string
+                              && request.resource.data.json.size() < 200000
+                              && request.resource.data.version is number;
+      allow delete: false;
+    }
+
+    // Maps a view-only code to its room's edit code.
+    match /snookerViewLinks/{viewCode} {
+      allow read: true;
+      allow create: if request.resource.data.keys().hasAll(['roomId'])
+                      && request.resource.data.roomId is string;
+      allow update, delete: false;
+    }
+  }
+}

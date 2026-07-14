@@ -19,7 +19,13 @@ service cloud.firestore {
                               && request.resource.data.version is number
                               && (!('viewCode' in request.resource.data)
                                   || request.resource.data.viewCode == null
-                                  || isValidRoomCode(request.resource.data.viewCode));
+                                  || isValidRoomCode(request.resource.data.viewCode))
+                              // Auto-expiry field for the Firestore TTL policy: must be a
+                              // timestamp no more than ~24h1m in the future, so clients can't
+                              // set it further out and keep a room alive indefinitely.
+                              && (!('expireAt' in request.resource.data)
+                                  || (request.resource.data.expireAt is timestamp
+                                      && request.resource.data.expireAt <= request.time + duration.value(24, 'h') + duration.value(1, 'm')));
       allow delete: false;
     }
 

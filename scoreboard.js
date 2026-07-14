@@ -178,7 +178,12 @@
       json: JSON.stringify(state),
       version: localVersion,
       viewCode: currentViewCode || null,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      // Auto-cleanup: Firestore's TTL policy deletes this doc once expireAt
+      // passes. Every write pushes it 24h further out, so a room only
+      // actually expires 24h after the last activity (i.e. ~24h after the
+      // game ends or is abandoned).
+      expireAt: firebase.firestore.Timestamp.fromMillis(Date.now() + 24*60*60*1000)
     }).catch(err=>{
       console.error('Save failed', err);
       updateSyncBadge('offline');
@@ -195,7 +200,8 @@
     db.collection('snookerRooms').doc(dbRoomId).set({
       json: JSON.stringify(state),
       version: localVersion,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      expireAt: firebase.firestore.Timestamp.fromMillis(Date.now() + 24*60*60*1000)
     }, {merge:true}).catch(err=>{
       console.error('Comment/reaction sync failed', err);
     });

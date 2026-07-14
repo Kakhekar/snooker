@@ -2,21 +2,34 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Only accept the exact 5-character code format this app generates
+    // (uppercase letters/digits, excluding 0/O/1/I) — rejects arbitrary
+    // document ids someone might try to write directly.
+    function isValidRoomCode(code) {
+      return code is string && code.matches('^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5}$');
+    }
+
     // One document per live match room, keyed by the 5-character edit code.
     match /snookerRooms/{roomId} {
-      allow read: true;
-      allow create, update: if request.resource.data.keys().hasAll(['json', 'version'])
+      allow read: if isValidRoomCode(roomId);
+      allow create, update: if isValidRoomCode(roomId)
+                              && request.resource.data.keys().hasAll(['json', 'version'])
                               && request.resource.data.json is string
                               && request.resource.data.json.size() < 200000
-                              && request.resource.data.version is number;
+                              && request.resource.data.version is number
+                              && (!('viewCode' in request.resource.data)
+                                  || request.resource.data.viewCode == null
+                                  || isValidRoomCode(request.resource.data.viewCode));
       allow delete: false;
     }
 
     // Maps a view-only code to its room's edit code.
     match /snookerViewLinks/{viewCode} {
-      allow read: true;
-      allow create: if request.resource.data.keys().hasAll(['roomId'])
-                      && request.resource.data.roomId is string;
+      allow read: if isValidRoomCode(viewCode);
+      allow create: if isValidRoomCode(viewCode)
+                      && request.resource.data.keys().hasAll(['roomId'])
+                      && request.resource.data.roomId is string
+                      && isValidRoomCode(request.resource.data.roomId);
       allow update, delete: false;
     }
   }

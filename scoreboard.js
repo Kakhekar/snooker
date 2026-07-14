@@ -16,11 +16,30 @@
   measurementId: "G-5F5BZLGE5F"
 };
 
+  // ================= APP CHECK =================
+  // Proves to Firestore that requests are coming from this real, deployed
+  // app — not a copy-pasted config used in some other script or site.
+  // ONE-TIME SETUP REQUIRED: register this web app with App Check in the
+  // Firebase console (Build > App Check > Apps > register with reCAPTCHA v3),
+  // then paste the site key it gives you below. Until you do, this silently
+  // does nothing and the app works exactly as before — it just isn't
+  // enforced against direct/scripted access yet.
+  const RECAPTCHA_V3_SITE_KEY = '6LcGbFMtAAAAACsjQtkECenUBnsrFfwyserPQXsi';
+
   let firebaseReady = false;
   let db = null;
   try{
     if(firebaseConfig.apiKey && firebaseConfig.apiKey !== 'YOUR_API_KEY' && typeof firebase !== 'undefined'){
       firebase.initializeApp(firebaseConfig);
+
+      if(RECAPTCHA_V3_SITE_KEY && RECAPTCHA_V3_SITE_KEY !== 'PASTE_YOUR_RECAPTCHA_V3_SITE_KEY_HERE' && firebase.appCheck){
+        try{
+          firebase.appCheck().activate(RECAPTCHA_V3_SITE_KEY, true); // true = auto-refresh tokens
+        } catch(e){
+          console.error('App Check activation failed:', e);
+        }
+      }
+
       db = firebase.firestore();
       firebaseReady = true;
       // Sanity check: confirm we can actually reach this Firestore project.
